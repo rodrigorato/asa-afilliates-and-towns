@@ -6,7 +6,7 @@
 #include <queue>
 #include <limits.h>
 
-#define INFINITE -1
+#define INFINITE -782973
 
 
 bool less_or_equal_infinity(int a, int b){
@@ -24,6 +24,9 @@ bool less_infinity(int a, int b){
 		return true;
 	return a < b;
 } 
+int sum_infinity(int a, int b){
+	return (a == INFINITE || b == INFINITE) ? INFINITE : a+b;
+}
 
 using namespace std;
 
@@ -52,8 +55,10 @@ private:
 	bool _bfChanges;
 
 	/* Aux variables for Dijkstra */
-	vector<vector<int> > _dijkstraMaster;
+	//vector<vector<int> > _dijkstraMaster;
+	vector<int> _dijkstraMaster;
 	vector<int> _dijkstraN;
+	vector<list<int> > _sumsMaster;
 
 	/* Aux variables for Johnson */
 	vector<int> _sums;
@@ -68,9 +73,11 @@ public:
 		_adjLists = new list<Edge>[nverts];
 		_h = vector<int>(_nverts, 0);
 		_bfChanges = true;
-		_dijkstraMaster = vector< vector<int> >(_nafls, vector<int>(_nverts, INFINITE));
+		//_dijkstraMaster = vector< vector<int> >(_nafls, vector<int>(_nverts, INFINITE));
 		_dijkstraN = vector<int>(_nverts, 0);
+		_sumsMaster = vector< list<int> >(_nverts);
 		_sums = vector<int>(_nafls, 0);
+		
 	}
 
 	~DirectedGraph(){
@@ -105,82 +112,92 @@ public:
 		return e.w + _h[u] - _h[e.v];
 	}
 
-	void Dijkstra(int act, int ind){
+	void Dijkstra(int act/*, int ind*/){
 		vector<bool> visited = vector<bool>(_nverts, false);
-		_dijkstraMaster[ind][act] = 0;
+		int min_index;
+		_dijkstraMaster = vector<int>(_nverts,INFINITE);
+		_dijkstraMaster[act] = 0;
+
 
 		for(int i = 0; i < _nverts; i++){
-			int min=INFINITE, min_index = -1;
+			int min=INFINITE; 
+			min_index = -1;
 			for(int j = 0; j < _nverts; j++){
-				
-				if((less_or_equal_infinity(_dijkstraMaster[ind][j], min) && !visited[j])/* && _dijkstraMaster[act][j] != INFINITE */){
-					min = _dijkstraMaster[ind][j];
-					
+				if((less_or_equal_infinity(_dijkstraMaster[j], min) && !visited[j])/* && _dijkstraMaster[act][j] != INFINITE */){
+					min = _dijkstraMaster[j];	
 					min_index = j;
 				}
 			} 
-			if(_dijkstraMaster[ind][min_index]!=INFINITE){
+			if(_dijkstraMaster[min_index]!=INFINITE){
 				list<Edge>::iterator e;
 				for(e = _adjLists[min_index].begin(); e != _adjLists[min_index].end(); e++){
-					if(less_infinity((min + newWeight(min_index, *e)), _dijkstraMaster[ind][e->v])/* || _dijkstraMaster[act][e->v] == INFINITE */){
-						_dijkstraMaster[ind][e->v] = (min + newWeight(min_index, *e));
+					if(less_infinity((min + newWeight(min_index, *e)), _dijkstraMaster[e->v])/* || _dijkstraMaster[act][e->v] == INFINITE */){
+						_dijkstraMaster[e->v] = (min + newWeight(min_index, *e));
 					}
 				}
 			}
 			else _dijkstraN[min_index] = INFINITE;
-			visited[min_index] = true;
-		}
-	
-	}
 
+			visited[min_index] = true;
+			//cout << _h[act] << endl;
+			_sumsMaster[min_index].push_back(sum_infinity(_dijkstraMaster[min_index], (_h[min_index] - _h[act])));
+			//cout << "done inner for " << i <<"/" << _nverts << endl;
+		}
+				
+		
+	}
+	
+	
 	void Johnson(){
-		int min = INFINITE, cand, pt = INFINITE;
-		vector<int> tempSums = vector<int>(_nafls, 0);
+		int min = INFINITE, cand, pt = INFINITE, j ;
+		vector<int> tempSums ;
 		bool solution = false;
 		BellmanFord();
 		for(int i = 0; i < _nafls; i++){
 			//printGraph();
 			//printf("dijkstra\n");
-			Dijkstra(_afls[i], i);
+			Dijkstra(_afls[i]/*, i*/);
+			//cout << "done " << i << "out of " << _nafls << " dijkstras" << endl;
 		}
+		
 		for(int i=0; i < _nverts ; i++){
-			printf("%d\n",_dijkstraN[i] );
+			//printf("%d\n",_dijkstraN[i] );
 			if(_dijkstraN[i]!=INFINITE){
 				solution = true;
 				//break;
 			}
 		}
-		
-		if(solution){
-			for(int v = 0; v < _nverts; v++){
+		if (solution){
+			for(int i=0 ; i<_nverts ;i++){
 				cand=0;
-				for(int u = 0; u < _nafls; u++){
-					if(_dijkstraMaster[u][v] == INFINITE)
-						break;
-					tempSums[u] = _dijkstraMaster[u][v] + _h[v] - _h[_afls[u]];
-					cand += tempSums[u];
+				tempSums = vector<int>(_nafls, 0);
+				list<int>::iterator s;
+				for(s = _sumsMaster[i].begin(), j=0; s != _sumsMaster[i].end(); s++, j++){
+					cand= sum_infinity(cand,*s);
+					tempSums[j] =*s;
 				}
-				printf("PONTO %d %d\n",v+1, cand );
+				//cout << i << ": " << cand << endl;
 				if(less_infinity(cand, min)){
 					min=cand;
-					pt = v;
+					pt = i;
 					_sums=tempSums;
 				} 
 				if(cand == min)
-					pt = less_infinity(v, pt) ? v : pt;	
+					pt = less_infinity(i, pt) ? i : pt;	
 			}
-
-			printf("Pt encontro: %d, custo: %d\n",pt+1,min );
-			for(int i=0; i< _nafls; i++){
-				printf("%d ",_sums[i] );
+			printf("%d %d\n",pt+1,min );
+			for(int j=0; j< _nafls; j++){
+				printf("%d ",_sums[j]);
 			}
-		}
+			printf("\n");
+		}	
 		else{
 			printf("N\n");
-		}
+		}	
 	}
 
 
+/*
 	void printGraph(){
 		printf("Directed graph with %d vertices, %d edges and %d afilliates:\n", _nverts, _nedges, _nafls);
 		for(int i = 0; i < _nafls; i++){
@@ -193,7 +210,7 @@ public:
 		}
 		printf("\nEdges (orig: (dest, weight), ...):");
 		for(int i = 0; i < _nverts; i++){
-			printf("\n%d (h = %d, dij1=%d, dij2=%d): ", i+1, _h[i], _dijkstraMaster[0][i], _dijkstraMaster[1][i]);
+			printf("\n%d (h = %d _sums= %d) : ", i+1, _h[i],_sums[i] );
 			for(int j = 0; j < (int)_adjLists[i].size(); j++){
 				std::list<Edge>::iterator it = std::next(_adjLists[i].begin(), j);
 				if(j == (int)_adjLists[i].size() - 1)
@@ -203,7 +220,7 @@ public:
 			}
 		}
 		printf("\n");
-	}
+	}*/
 
 };
 
@@ -227,7 +244,7 @@ int main(){
 	}
 
 	g.Johnson();
-	g.printGraph();
+	//g.printGraph();
 
 	// TRANSLATE INDEXES BACK FROM n-1 to n!!
 	return 0;
