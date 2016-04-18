@@ -8,6 +8,7 @@
 
 #define INFINITE -782973
 
+using namespace std;
 
 bool less_or_equal_infinity(int a, int b){
 	if(b == INFINITE)
@@ -28,23 +29,20 @@ int sum_infinity(int a, int b){
 	return (a == INFINITE || b == INFINITE) ? INFINITE : a+b;
 }
 
-using namespace std;
-
-
-class lesscomp{
-	vector<int> _dm;
+class vec_compare{
+  	const vector<int>* _dm;
 public:
-  	lesscomp(const vector<int>& dm){
-  		_dm = dm;
+ 	vec_compare(const vector<int>* somenumbers){
+ 	  _dm = somenumbers;
   	}
   
-  	bool operator() (const int& lhs, const int&rhs) const{
+  	bool operator() (const int& lhs, const int&rhs) const {
   		// true: lhs < rhs
-  		return _dm[lhs] < _dm[rhs];
+  		return (*_dm)[lhs] < (*_dm)[rhs];
     }
 };
 
-typedef std::priority_queue<int,std::vector<int>,lesscomp> Queue;
+typedef std::priority_queue<int,std::vector<int>,vec_compare> Queue;
 
 class Edge{
 public:
@@ -133,23 +131,23 @@ public:
 		int min_index;
 		_dijkstraMaster = vector<int>(_nverts,INFINITE);
 		_dijkstraMaster[act] = 0;
-		Queue priQueue (lesscomp(_dijkstraMaster));
+		vec_compare comparator = vec_compare(&_dijkstraMaster);
+		Queue priQueue(comparator);
 
 		for(int i = 0; i < _nverts; i++){
 			priQueue.push(i);
 		}
 
-		cout << priQueue.top() <<endl ;
 
-		for(int i = 0; i < _nverts; i++){
-			int min=INFINITE; 
-			min_index = -1;
-			for(int j = 0; j < _nverts; j++){
-				if((less_or_equal_infinity(_dijkstraMaster[j], min) && !visited[j])/* && _dijkstraMaster[act][j] != INFINITE */){
-					min = _dijkstraMaster[j];	
-					min_index = j;
-				}
-			} 
+		//cout << priQueue.top() <<endl ;
+
+		while(!priQueue.empty()){
+			int min;
+
+			min_index = priQueue.top();
+			min = _dijkstraMaster[min_index];
+			priQueue.pop();
+
 			if(_dijkstraMaster[min_index]!=INFINITE){
 				list<Edge>::iterator e;
 				for(e = _adjLists[min_index].begin(); e != _adjLists[min_index].end(); e++){
