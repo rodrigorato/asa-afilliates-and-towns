@@ -30,6 +30,22 @@ int sum_infinity(int a, int b){
 
 using namespace std;
 
+
+class lesscomp{
+	vector<int> _dm;
+public:
+  	lesscomp(const vector<int>& dm){
+  		_dm = dm;
+  	}
+  
+  	bool operator() (const int& lhs, const int&rhs) const{
+  		// true: lhs < rhs
+  		return _dm[lhs] < _dm[rhs];
+    }
+};
+
+typedef std::priority_queue<int,std::vector<int>,lesscomp> Queue;
+
 class Edge{
 public:
 	int v;
@@ -117,7 +133,13 @@ public:
 		int min_index;
 		_dijkstraMaster = vector<int>(_nverts,INFINITE);
 		_dijkstraMaster[act] = 0;
+		Queue priQueue (lesscomp(_dijkstraMaster));
 
+		for(int i = 0; i < _nverts; i++){
+			priQueue.push(i);
+		}
+
+		cout << priQueue.top() <<endl ;
 
 		for(int i = 0; i < _nverts; i++){
 			int min=INFINITE; 
