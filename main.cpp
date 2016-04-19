@@ -3,8 +3,8 @@
 #include <list>
 #include <vector>
 #include <algorithm>
-#include <queue>
 #include <limits.h>
+#include <cmath>
 
 #define INFINITE -782973
 
@@ -50,7 +50,76 @@ public:
     }
 };
 
-typedef std::priority_queue<int,std::vector<int>,vec_compare> Queue;
+class Heap{
+public:
+	int size;
+	vector<int> pos;
+	vector<int> q;
+	vector<int>& d;
+
+	Heap(int s, int act, vector<int>& dists): d(dists){
+		size = s;
+		pos = vector<int>(size);
+		q = vector<int>(size);
+
+		for(int i = 0; i < size; i++){
+			pos[i] = i;
+			q[i] = i;
+		}
+
+		q[0] = act;
+		q[act] = 0;
+
+		pos[0] = act;
+		pos[act] = 0;
+	}
+
+	int pop(){
+		int min = q[0];
+		q[0] = q[size-1];
+		pos[q[0]] = 0;
+		size--;
+		min_heapify(0);
+		/*
+		for(int i = 0; i < size; i++){
+			cout << d[q[i]] << " ";
+		}
+		cout << endl;
+		*/
+		return min;
+	}
+
+	void min_heapify(int ind){
+		int l = 2*ind+1, r = 2*ind+2, smallest = ind;
+		if(less_infinity(l, size) && greater_infinity(d[q[ind]], d[q[l]])){
+			smallest = l;
+		} 
+		if(less_infinity(r, size) && greater_infinity(d[q[smallest]], d[q[r]])){
+			smallest = r;
+		} 
+		if(smallest != ind){
+			swap(pos[q[ind]], pos[q[smallest]]);
+			swap(q[ind], q[smallest]);
+			min_heapify(smallest);
+		}
+	}
+	void decreaseKey(int ind){
+			/*
+			A[i] ← key
+			2 while i > 1 and A[Parent(i)] < A[i]
+			3 do exchange A[i] ↔ A[Parent(i)]
+			4 i ← Parent(i)
+			*/
+			ind = pos[ind];
+
+			while(ind > 0 && greater_infinity(d[q[(int)floor((ind - 1)/2)]], d[q[ind]])){
+				swap(q[ind], q[(int)floor((ind - 1)/2)]);
+				swap(pos[q[ind]], pos[q[(int)floor((ind - 1)/2)]]);
+				ind = (int)floor((ind - 1)/2);
+			}
+		}
+
+};
 
 class Edge{
 public:
@@ -83,7 +152,6 @@ private:
 	vector<list<int> > _sumsMaster;
 
 	/* Aux variables for Johnson */
-	vector<int> _sums;
 
 public:
 	DirectedGraph(int nverts, int nedges, int nafls, int* afls){
@@ -95,11 +163,8 @@ public:
 		_adjLists = new list<Edge>[nverts];
 		_h = vector<int>(_nverts, 0);
 		_bfChanges = true;
-		//_dijkstraMaster = vector< vector<int> >(_nafls, vector<int>(_nverts, INFINITE));
 		_dijkstraN = vector<int>(_nverts, 0);
 		_sumsMaster = vector< list<int> >(_nverts);
-		_sums = vector<int>(_nafls, 0);
-		
 	}
 
 	~DirectedGraph(){
@@ -124,7 +189,7 @@ public:
 			for(e = _adjLists[i].begin(); e != _adjLists[i].end(); e++){
 				if((_h[i] + e->w) < _h[e->v]){
 					_h[e->v] = (_h[i] + e->w);
-					BellmanFord();
+					//BellmanFord();
 				}
 			}
 		}
@@ -134,102 +199,86 @@ public:
 		return e.w + _h[u] - _h[e.v];
 	}
 
-	void Dijkstra(int act/*, int ind*/){
-		vector<bool> visited = vector<bool>(_nverts, false);
-		int min_index;
-		_dijkstraMaster = vector<int>(_nverts,INFINITE);
+
+	void Dijkstra(int act){
+		int min_index, min;
+		_dijkstraMaster = vector<int>(_nverts, INFINITE);
 		_dijkstraMaster[act] = 0;
-		vec_compare comparator = vec_compare(&_dijkstraMaster);
-	//	Queue priQueue(comparator);
-		vector<int> q=vector<int>(_nverts);
+		Heap q = Heap(_nverts, act, _dijkstraMaster);
+		//vec_compare comparator = vec_compare(&_dijkstraMaster);
 
-		for(int i = 0; i < _nverts; i++){
-			q[i]=i;
-		}
-		make_heap(q.begin(),q.end(),comparator);
 
-		//cout << priQueue.top() <<endl ;
-
-		while(q.size()){
-			int min;
-
-			min_index = q.front();
+		/* Iterating over all the vertices */
+		while(q.size != 0){
+			/* Extract the min from the min-heap */
+			min_index = q.pop();
 			min = _dijkstraMaster[min_index];
-			
-
-			//for (int i =0; i<_nverts;i++) cout << _dijkstraMaster[i] << endl;
-			//cout << min_index+1 << ": "<<_dijkstraMaster[min_index] << endl;
+			/*
 			pop_heap(q.begin(),q.end(),comparator);
 			q.pop_back();
+			*/
 
+			//cout << "min_index=" << min_index+1 << " min=" << min << endl;
 
-
-			if(_dijkstraMaster[min_index]!=INFINITE){
+			/* Iterating over all the edges of the vert and reweight adjacencies on the way */
+			if(_dijkstraMaster[min_index] != INFINITE){
 				list<Edge>::iterator e;
 				for(e = _adjLists[min_index].begin(); e != _adjLists[min_index].end(); e++){
 					if(less_infinity((min + newWeight(min_index, *e)), _dijkstraMaster[e->v])/* || _dijkstraMaster[act][e->v] == INFINITE */){
 						_dijkstraMaster[e->v] = (min + newWeight(min_index, *e));
-						make_heap(q.begin(),q.end(),comparator);
+						//make_heap(q.begin(),q.end(),comparator);
+						q.decreaseKey(e->v);
 					}
 				}
 			}
-			else _dijkstraN[min_index] = INFINITE;
+			else 
+				_dijkstraN[min_index] = INFINITE;
 
+			/* Translating weight values from non-negative to normal */
 			_sumsMaster[min_index].push_back(sum_infinity(_dijkstraMaster[min_index], (_h[min_index] - _h[act])));
-			
-			//cout << "----------------"<<endl;	
 		}
-				
-		
 	}
 	
 	
 	void Johnson(){
-		int min = INFINITE, cand, pt = INFINITE, j ;
-		vector<int> tempSums ;
+		int min = INFINITE, cand, pt = INFINITE, j;
 		bool solution = false;
+
 		BellmanFord();
-		for(int i = 0; i < _nafls; i++){
-			//printGraph();
-			//printf("dijkstra\n");
-			Dijkstra(_afls[i]/*, i*/);
-			//cout << "done " << i << "out of " << _nafls << " dijkstras" << endl;
-		}
-		
-		for(int i=0; i < _nverts ; i++){
-			//printf("%d\n",_dijkstraN[i] );
-			if(_dijkstraN[i]!=INFINITE){
+
+		for(int i = 0; i < _nafls; i++)
+			Dijkstra(_afls[i]);
+
+
+
+		for(int i = 0; i < _nverts; i++){
+			cand = 0;
+
+			if(_dijkstraN[i] != INFINITE)
 				solution = true;
-				break;
-			}
+
+			list<int>::iterator s;
+			for(s = _sumsMaster[i].begin(), j=0; s != _sumsMaster[i].end(); s++, j++)
+				cand = sum_infinity(cand,*s);
+
+			if(less_infinity(cand, min)){
+				min = cand;
+				pt = i;
+			} 
+			
+			if(cand == min)
+				pt = less_infinity(i, pt) ? i : pt;	
 		}
-		if (solution){
-			for(int i=0 ; i<_nverts ;i++){
-				cand=0;
-				tempSums = vector<int>(_nafls, 0);
-				list<int>::iterator s;
-				for(s = _sumsMaster[i].begin(), j=0; s != _sumsMaster[i].end(); s++, j++){
-					cand= sum_infinity(cand,*s);
-					tempSums[j] =*s;
-				}
-				//cout << i << ": " << cand << endl;
-				if(less_infinity(cand, min)){
-					min=cand;
-					pt = i;
-					_sums=tempSums;
-				} 
-				if(cand == min)
-					pt = less_infinity(i, pt) ? i : pt;	
-			}
-			printf("%d %d\n",pt+1,min );
-			for(int j=0; j< _nafls; j++){
-				printf("%d ",_sums[j]);
-			}
+
+		if(solution){
+			printf("%d %d\n", pt+1, min);
+			list<int>::iterator s;
+			for(s = _sumsMaster[pt].begin(); s != _sumsMaster[pt].end(); s++)
+				printf("%d ",*s);
 			printf("\n");
 		}	
-		else{
+		else
 			printf("N\n");
-		}	
 	}
 
 
