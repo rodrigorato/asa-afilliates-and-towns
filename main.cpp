@@ -25,18 +25,16 @@ bool less_infinity(int a, int b){
 		return true;
 	return a < b;
 } 
-
+int sum_infinity(int a, int b){
+	return (a == INFINITE || b == INFINITE) ? INFINITE : a+b;
+}
 bool greater_infinity(int a, int b){
 	if(b == INFINITE)
 		return false;
 	if(a == INFINITE)
 		return true;
-	return a > b;
+	return a>b;
 } 
-
-int sum_infinity(int a, int b){
-	return (a == INFINITE || b == INFINITE) ? INFINITE : a+b;
-}
 
 class vec_compare{
   	const vector<int>* _dm;
@@ -47,6 +45,7 @@ public:
   
   	bool operator() (const int& lhs, const int&rhs) const {
   		// true: lhs < rhs
+  		//cout << lhs+1 << " : " << (*_dm)[lhs] << " < " << rhs+1 << ": " << (*_dm)[rhs]<<endl;
   		return greater_infinity((*_dm)[lhs], (*_dm)[rhs]);
     }
 };
@@ -141,63 +140,47 @@ public:
 		_dijkstraMaster = vector<int>(_nverts,INFINITE);
 		_dijkstraMaster[act] = 0;
 		vec_compare comparator = vec_compare(&_dijkstraMaster);
-		Queue priQueue(comparator);
-		vector<bool> inQueue = vector<bool>(_nverts, false);
-		/*
-		for(int i = 0; i < _nverts; i++){
-			priQueue.push(i);
-		}
-		*/
-		priQueue.push(act);
-		inQueue[act] = true;
+	//	Queue priQueue(comparator);
+		vector<int> q=vector<int>(_nverts);
 
+		for(int i = 0; i < _nverts; i++){
+			q[i]=i;
+		}
+		make_heap(q.begin(),q.end(),comparator);
 
 		//cout << priQueue.top() <<endl ;
 
-		while(!priQueue.empty()){
+		while(q.size()){
 			int min;
-			
-			Queue temp = priQueue;
-			
-			cout << "PRI QUEUE: ";
-			while(!temp.empty()){
-				cout << temp.top() + 1 << " ";
-				temp.pop();
-			}
-			cout << endl;
-			
-			min_index = priQueue.top();
+
+			min_index = q.front();
 			min = _dijkstraMaster[min_index];
 			
-			priQueue.pop();
-			inQueue[min_index] = false;
+
+			//for (int i =0; i<_nverts;i++) cout << _dijkstraMaster[i] << endl;
+			//cout << min_index+1 << ": "<<_dijkstraMaster[min_index] << endl;
+			pop_heap(q.begin(),q.end(),comparator);
+			q.pop_back();
+
+
 
 			if(_dijkstraMaster[min_index]!=INFINITE){
 				list<Edge>::iterator e;
 				for(e = _adjLists[min_index].begin(); e != _adjLists[min_index].end(); e++){
 					if(less_infinity((min + newWeight(min_index, *e)), _dijkstraMaster[e->v])/* || _dijkstraMaster[act][e->v] == INFINITE */){
 						_dijkstraMaster[e->v] = (min + newWeight(min_index, *e));
-						if(!visited[e->v] && !inQueue[e->v]){
-							priQueue.push(e->v);
-							inQueue[e->v] = true;
-						}
+						make_heap(q.begin(),q.end(),comparator);
 					}
-					
 				}
 			}
 			else _dijkstraN[min_index] = INFINITE;
 
-			visited[min_index] = true;
-			//cout << _h[act] << endl;
 			_sumsMaster[min_index].push_back(sum_infinity(_dijkstraMaster[min_index], (_h[min_index] - _h[act])));
-			//cout << "done inner for " << i <<"/" << _nverts << endl;
 			
-			if(priQueue.empty())
-				for(int i = 0; i < _nverts; i++)
-					if(!visited[i])
-						priQueue.push(i);
-
-		}	
+			//cout << "----------------"<<endl;	
+		}
+				
+		
 	}
 	
 	
