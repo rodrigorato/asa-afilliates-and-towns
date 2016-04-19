@@ -13,7 +13,7 @@ public:
   }
   
   bool operator() (const int& lhs, const int&rhs) const {
-    return (*_somenumbers)[lhs] < (*_somenumbers)[rhs];
+    return (*_somenumbers)[lhs] > (*_somenumbers)[rhs];
   }
 };
 
@@ -22,9 +22,12 @@ int main (){
 
   /* posicoes pares sao 1, impares sao 0 */
   vector<int> myints = vector<int>(howmany);
-  for(int i = 0; i < howmany; i++){
-    myints[i] = i;
-  }
+  myints[0] = 73;
+  myints[1] = -5;
+  myints[2] = 4;
+  myints[3] = 500;
+  myints[4] = 12;
+  // 1 2 4 0 3
 
 	typedef std::priority_queue<int,std::vector<int>,vec_compare> Queue;
   

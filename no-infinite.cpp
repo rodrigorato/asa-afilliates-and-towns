@@ -177,12 +177,12 @@ public:
 				for(e = _adjLists[min_index].begin(); e != _adjLists[min_index].end(); e++){
 					if(less_infinity((min + newWeight(min_index, *e)), _dijkstraMaster[e->v])/* || _dijkstraMaster[act][e->v] == INFINITE */){
 						_dijkstraMaster[e->v] = (min + newWeight(min_index, *e));
-						if(!visited[e->v] && !inQueue[e->v]){
-							priQueue.push(e->v);
-							inQueue[e->v] = true;
-						}
 					}
 					
+					if(!visited[e->v] && !inQueue[e->v]){
+						priQueue.push(e->v);
+						inQueue[e->v] = true;
+					}
 				}
 			}
 			else _dijkstraN[min_index] = INFINITE;
@@ -191,13 +191,9 @@ public:
 			//cout << _h[act] << endl;
 			_sumsMaster[min_index].push_back(sum_infinity(_dijkstraMaster[min_index], (_h[min_index] - _h[act])));
 			//cout << "done inner for " << i <<"/" << _nverts << endl;
-			
-			if(priQueue.empty())
-				for(int i = 0; i < _nverts; i++)
-					if(!visited[i])
-						priQueue.push(i);
-
-		}	
+		}
+				
+		
 	}
 	
 	
@@ -217,7 +213,7 @@ public:
 			//printf("%d\n",_dijkstraN[i] );
 			if(_dijkstraN[i]!=INFINITE){
 				solution = true;
-				break;
+				//break;
 			}
 		}
 		if (solution){
