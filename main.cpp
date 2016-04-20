@@ -133,6 +133,7 @@ public:
 	int _nedges; // Maybe we don't need this (used only to get input?)
 	int _nafls;
 	int* _afls; // Array with all the identifiers for afilliate points
+	int _solution;
 	list<Edge>* _adjLists;
 	bool _trans;
 	
@@ -149,13 +150,13 @@ public:
 	/* Aux variables for Johnson */
 
 
-	DirectedGraph(int nverts, int nedges, int nafls, int* afls, bool trans){
+	DirectedGraph(int nverts, int nedges, int nafls, int* afls){
 		/* Class constructor */
 		_nverts = nverts;
 		_nedges = nedges;
 		_nafls = nafls;
 		_afls = afls;
-		_trans = trans;
+		_trans = false;
 
 		_adjLists = new list<Edge>[nverts];
 		_h = vector<int>(_nverts, 0);
@@ -243,21 +244,23 @@ public:
 	}
 	
 	
-	int Johnson(int nafls, int *afls){
+	int Johnson(){
 		int min = INFINITE, cand, pt = INFINITE;
-		bool solution = false;
+		bool solvable = false;
 
 		BellmanFord();
-
-		for(int i = 0; i < _nafls; i++)
-			Dijkstra(_afls[i]);
+		if (_trans)
+			Dijkstra(_solution);
+		else
+			for(int i = 0; i < _nafls; i++)
+				Dijkstra(_afls[i]);
 
 
 		for(int i = 0; i < _nverts; i++){
 			//cand = 0;
 
 			if(_dijkstraN[i] != INFINITE)
-				solution = true;
+				solvable = true;
 			/*
 			list<int>::iterator s;
 			for(s = _sumsMaster[i].begin(), j=0; s != _sumsMaster[i].end(); s++, j++)
@@ -273,7 +276,7 @@ public:
 				pt = less_infinity(i, pt) ? i : pt;	
 		}
 
-		if(solution){
+		if(solvable){
 			if(!_trans){
 				printf("%d %d\n", pt+1, min);
 				return pt;
@@ -284,8 +287,8 @@ public:
 				printf("%d ",*s);
 			*/
 			if(_trans){
-				for(int i = 0; i < nafls; i++){
-					printf("%d ", _sumsMaster[afls[i]]);
+				for(int i = 0; i < _nafls; i++){
+					printf("%d ", _sumsMaster[_afls[i]]);
 				}
 				printf("\n");
 			}
@@ -293,6 +296,23 @@ public:
 		else
 			printf("N\n");
 		return -1;
+	}
+
+	void trans(int afl){
+		list<Edge>* newAdjList = new list<Edge>[_nverts];
+		for(int i = 0; i < _nverts; i++){
+			while(!_adjLists[i].empty()){
+				Edge t = _adjLists[i].front(); _adjLists[i].pop_front();
+				swap(t.u, t.v);
+				newAdjList[t.u].push_back(t);			
+			}
+		}
+		delete[] _adjLists; _adjLists = newAdjList;
+		_h = vector<int>(_nverts, 0);
+		_trans = true;
+		_sumsMaster = vector<int>(_nverts,0);
+		_dijkstraN = vector<int>(_nverts, 0);
+		_solution=afl;
 	}
 
 
@@ -319,8 +339,8 @@ public:
 			}
 		}
 		printf("\n");
-	}
-	*/
+	}*/
+	
 };
 
 
@@ -330,26 +350,25 @@ int main(){
 	scanf("%d %d %d", &n_towns, &n_afls, &n_conns);
 
 	int *afls = new int[n_afls]; 
-	int *sol = new int[1];
+	int sol;
 	for(int i = 0; i < n_afls; i++){
 		scanf("%d", &(afls[i]));
 		afls[i]--; // Translating indexes - internally we start at zero
 	}
-	DirectedGraph g = DirectedGraph(n_towns, n_conns, n_afls, afls, false);
-	DirectedGraph t = DirectedGraph(n_towns, n_conns, 1, sol, true);
+	DirectedGraph g = DirectedGraph(n_towns, n_conns, n_afls, afls);
 
 	for(int i = 0; i < n_conns; i++){
 		int u, v, w;
 		scanf("%d %d %d", &u, &v, &w);
 		g.addEdge(u-1, v-1, w); // Translating to internal index
-		t.addEdge(v-1, u-1, w);
-
 	}
 
-	sol[0] = g.Johnson(n_afls, afls);
-	if(sol[0]!=-1){
-		t.BellmanFord();
-		t.Johnson(n_afls, afls);
+	sol = g.Johnson();
+	g.trans(sol);
+	if(sol!=-1){
+		//g.BellmanFord();
+		g.Johnson();
+		//g.printGraph();
 	}
 	//t.printGraph();
 
