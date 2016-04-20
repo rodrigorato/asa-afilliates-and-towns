@@ -115,12 +115,10 @@ public:
 
 class Edge{
 public:
-	int u;
 	int v;
 	int w;
 
-	Edge(int vert_orig, int vert_dest, int weight){
-		u = vert_orig;
+	Edge(int vert_dest, int weight){
 		v = vert_dest;
 		w = weight;
 	}
@@ -178,7 +176,7 @@ public:
 		 * this edge will be directed from u to v. 
 		 * The edge's weight will be w.
 		 **/
-		_adjLists[u].push_back(Edge(u, v, w));
+		_adjLists[u].push_back(Edge(v, w));
 	}
 
 	void BellmanFord(){
@@ -303,8 +301,9 @@ public:
 		for(int i = 0; i < _nverts; i++){
 			while(!_adjLists[i].empty()){
 				Edge t = _adjLists[i].front(); _adjLists[i].pop_front();
-				swap(t.u, t.v);
-				newAdjList[t.u].push_back(t);			
+				int u = t.v;
+				t.v = i;
+				newAdjList[u].push_back(t);			
 			}
 		}
 		delete[] _adjLists; _adjLists = newAdjList;
