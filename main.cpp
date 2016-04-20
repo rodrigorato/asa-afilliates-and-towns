@@ -44,8 +44,6 @@ public:
   	}
   
   	bool operator() (const int& lhs, const int&rhs) const {
-  		// true: lhs < rhs
-  		//cout << lhs+1 << " : " << (*_dm)[lhs] << " < " << rhs+1 << ": " << (*_dm)[rhs]<<endl;
   		return greater_infinity((*_dm)[lhs], (*_dm)[rhs]);
     }
 };
@@ -80,12 +78,6 @@ public:
 		pos[q[0]] = 0;
 		size--;
 		min_heapify(0);
-		/*
-		for(int i = 0; i < size; i++){
-			cout << d[q[i]] << " ";
-		}
-		cout << endl;
-		*/
 		return min;
 	}
 
@@ -169,7 +161,7 @@ public:
 		_h = vector<int>(_nverts, 0);
 		_bfChanges = true;
 		_dijkstraN = vector<int>(_nverts, 0);
-		_sumsMaster = vector<int>(_nverts);
+		_sumsMaster = vector<int>(_nverts,0);
 	}
 
 	~DirectedGraph(){
@@ -243,6 +235,7 @@ public:
 			}
 			else 
 				_dijkstraN[min_index] = INFINITE;
+			//cout << act+1<<","<<min_index+1<<":"<<sum_infinity(_dijkstraMaster[min_index], (_h[min_index] - _h[act])) << endl;
 			_sumsMaster[min_index]= sum_infinity(_sumsMaster[min_index], sum_infinity(_dijkstraMaster[min_index], (_h[min_index] - _h[act])));
 			/* Translating weight values from non-negative to normal */
 			//_sumsMaster[min_index].push_back(sum_infinity(_dijkstraMaster[min_index], (_h[min_index] - _h[act])));
@@ -283,7 +276,7 @@ public:
 		if(solution){
 			if(!_trans){
 				printf("%d %d\n", pt+1, min);
-				return min;
+				return pt;
 			}
 			/*
 			list<int>::iterator s;
@@ -299,7 +292,7 @@ public:
 		}	
 		else
 			printf("N\n");
-		return pt;
+		return -1;
 	}
 
 
@@ -354,8 +347,10 @@ int main(){
 	}
 
 	sol[0] = g.Johnson(n_afls, afls);
-	t.BellmanFord();
-	t.Johnson(n_afls, afls);
+	if(sol[0]!=-1){
+		t.BellmanFord();
+		t.Johnson(n_afls, afls);
+	}
 	//t.printGraph();
 
 	// TRANSLATE INDEXES BACK FROM n-1 to n!!
